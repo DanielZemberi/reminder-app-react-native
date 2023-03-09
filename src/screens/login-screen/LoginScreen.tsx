@@ -13,13 +13,17 @@ import {
   signInWithEmailAndPassword,
   signOut,
 } from "firebase/auth";
-import axios from "axios";
+import { useAppDispatch, useAppSelector } from "../../store";
+import { appActions } from "../../store/app/app.slice";
 
 const LoginScreen = () => {
   const [email, setEmail] = React.useState("danielftwww@gmail.com");
   const [password, setPassword] = React.useState("Dfsffs");
   const [user, setUser] = React.useState<string>(null);
   const [token, setToken] = React.useState<string>(null);
+  const dispatch = useAppDispatch();
+
+  const isLoggedIn = useAppSelector((state) => state.app.hasTokens);
 
   const handeSignUp = React.useCallback(async () => {
     try {
@@ -43,17 +47,21 @@ const LoginScreen = () => {
     } catch (error) {
       console.log("error", error);
     }
-  }, [email, password]);
+  }, []);
 
   React.useEffect(() => {
     auth.onAuthStateChanged((userCredentials) => {
       if (!userCredentials) {
         setUser(null);
         setToken(null);
+        dispatch(appActions.setHasTokens(false));
         return;
       }
       setUser(userCredentials.email);
-      userCredentials.getIdToken().then((token) => setToken(token));
+      userCredentials.getIdToken().then((token) => {
+        dispatch(appActions.setHasTokens(true));
+        setToken(token);
+      });
     });
   }, []);
 
@@ -62,22 +70,23 @@ const LoginScreen = () => {
   //   fetchData();
   // }, []);
 
-  const fetchData = async () => {
-    try {
-      const res = await axios.get("http://10.0.2.2:8080/api/test", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-    } catch (err) {
-      if (axios.isAxiosError(err)) {
-        console.log(err.response);
-      }
-      console.log("UNKNOWN ERROR", err);
-    }
-  };
-
+  // const fetchData = async () => {
+  //   try {
+  //     const res = await axios.get("http://10.0.2.2:8080/api/test", {
+  //       headers: { Authorization: `Bearer ${token}` },
+  //     });
+  //   } catch (err) {
+  //     if (axios.isAxiosError(err)) {
+  //       console.log(err.response);
+  //     }
+  //     console.log("UNKNOWN ERROR", err);
+  //   }
+  // };
   return (
     <KeyboardAvoidingView style={styles.container}>
-      <View>{user ? <Text>{user}</Text> : null}</View>
+      <View>
+        <Text>{isLoggedIn}</Text>
+      </View>
       <View style={styles.inputContainer}>
         <TextInput
           style={styles.input}
@@ -111,13 +120,13 @@ const LoginScreen = () => {
             <Text style={styles.buttonOutlineText}>Logout</Text>
           </TouchableOpacity>
         ) : null}
-
+        {/* 
         <TouchableOpacity
           onPress={fetchData}
           style={[styles.button, styles.buttonOutline]}
         >
           <Text style={styles.buttonOutlineText}>FETCH</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </KeyboardAvoidingView>
   );
